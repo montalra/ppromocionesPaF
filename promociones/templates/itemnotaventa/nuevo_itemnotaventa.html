@@ -145,17 +145,25 @@
     </section>
  
 </main>
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 <script>
-
-
     $(document).ready(function () {
+        function mostrarSweetAlert(title, text, icon) {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                confirmButtonText: 'OK'
+            });
+        }
+
         function calcularTotalItem() {
             var precioUnitario = parseFloat($('#id_precio_unitario').val()) || 0;
             var cantidad = parseInt($('#id_cantidad').val()) || 0;
-
             var promocionDescuento = parseFloat($('#id_promocion_aplicada').find(':selected').data('descuento')) || 0;
+          
 
             $('#id_factor_descuento').val(promocionDescuento);
 
@@ -166,24 +174,33 @@
             $('#id_total_item_bruto').val(totalItemBruto.toFixed(2));
             $('#id_descuento_unitario').val(descuentoUnitario.toFixed(2));
             $('#id_total_item').val(totalItem.toFixed(2));
+
+            // Verificar condiciones y mostrar SweetAlerts
+            if (promocionDescuento > 0 && cantidad >= cantidadLimite) {
+                mostrarSweetAlert('¡Promoción Aplicada!', 'Este artículo tiene una promoción aplicada con descuento y cantidad límite.', 'success');
+            } else if (promocionDescuento > 0) {
+                mostrarSweetAlert('¡Promoción Aplicada!', 'Este artículo tiene una promoción aplicada con descuento.', 'success');
+            } else if (cantidad >= 48) {
+                mostrarSweetAlert('¡esta venta tiene promocion', 'success');
+            } else {
+                mostrarSweetAlert('Sin Promoción', 'Este artículo no tiene una promoción aplicada.', 'info');
+
+                // Mostrar SweetAlert2 si la cantidad es cero
+                if (cantidad === 0) {
+                    mostrarSweetAlert('Cantidad Cero', 'La cantidad de este artículo es cero.', 'warning');
+                }
+            }
         }
 
         $('#id_total_item_bruto,#id_factor_descuento, #id_descuento_unitario, #id_total_item').prop('readonly', true);
-
-        
 
         $('#id_precio_unitario, #id_cantidad, #id_promocion_aplicada').change(function () {
             calcularTotalItem();
         });
 
         calcularTotalItem();
-
-
     });
-
 </script>
-
-
 
 
 {% endblock %}

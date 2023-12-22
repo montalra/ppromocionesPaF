@@ -636,7 +636,19 @@ def NotaVentaActualizar(request, nota_venta_id):
     if request.method == 'POST':
         form = NotaVentaForm(request.POST, instance=notaventa)
         if form.is_valid():
-            form.save()
+            notaventa_instance = form.save(commit=False)
+
+            # Registra la NotaVenta sin asignar la promoción aún
+            notaventa_instance.save()
+
+            # Aplicar promociones y asignar bonificación
+            promocion_aplicada = aplicar_promociones(notaventa_instance)
+
+            # Si hay una promoción aplicada, asignarla a la NotaVenta
+            if promocion_aplicada:
+                notaventa_instance.promocion_aplicada = promocion_aplicada
+
+            notaventa_instance.save()
             return redirect('notaventa_lista')
     else:
         form = NotaVentaForm(instance=notaventa)
@@ -656,6 +668,7 @@ def ItemNotaVentaDetalle(request,item_id):
     itemnotaventa = get_object_or_404(ItemNotaVenta, item_id=item_id)   
     return render(request, 'itemnotaventa/itemnotaventa_detalle.html', {'itemnotaventa':itemnotaventa})
 
+
 def ItemNotaVentaRegistro(request):
     if request.method == 'POST':
         form = ItemNotaVentaForm(request.POST)
@@ -666,23 +679,13 @@ def ItemNotaVentaRegistro(request):
             itemnotaventa_instance.save()
 
             # Aplicar promociones y asignar bonificación
-            promocion_aplicada = aplicar_promociones(itemnotaventa_instance.nota_venta, itemnotaventa_instance)
-
-            # Si hay una promoción aplicada, asignarla al ItemNotaVenta
-            if promocion_aplicada:
-                itemnotaventa_instance.promocion_aplicada = promocion_aplicada
-
-            itemnotaventa_instance.save()
-
-            if promocion_aplicada:
-                messages.success(request, 'Se ha agregado el ítem con promoción.')
-            else:
-                messages.info(request, 'Se ha agregado el ítem sin promoción.')
+            aplicar_promociones(itemnotaventa_instance.nota_venta, itemnotaventa_instance)
 
             return redirect('nuevo_itemnotaventa')
     else:
         form = ItemNotaVentaForm()
 
+    # Tu código para renderizar el formulario y la lista de items
     itemnotaventa = ItemNotaVenta.objects.all()
     return render(request, 'itemnotaventa/nuevo_itemnotaventa.html', {'object_list': itemnotaventa, 'form': form})
 
@@ -779,11 +782,10 @@ def PromocionActualizar(request, promocion_id):
             promocion_instance.articulo.clear()
 
             articulos_seleccionados = form.cleaned_data['articulo']
-
             promocion_instance.save()
 
             for articulo in articulos_seleccionados:
-                PromocionArticulo.objects.create(promocion=promocion_instance, arti=articulo)
+                PromocionArticulo.objects.create(promocion_id=promocion_instance, arti=articulo)
 
             return redirect('nuevo_promocion')
     else:
